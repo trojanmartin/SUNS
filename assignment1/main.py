@@ -31,6 +31,8 @@ def clearData(df):
     df.drop(df[df.ap_hi < 30].index, inplace=True)
 
     df.drop(df[df.active > 1].index, inplace=True)
+
+    df['age'] = df['age'] / 365
     return df
 def createGraphs(df):
     fig = px.scatter(df, x="age", y="cardio")
@@ -59,31 +61,29 @@ def createGraphs(df):
 
 def binary_classification(df):
     df = df.drop(["height","smoke","alco","active","gender","glucose", "ap_lo"],axis=1)
-    train, test, validate = np.split(df.sample(frac=1), [int(.6*len(df)), int(.8*len(df))])
-    print(train.shape, test.shape, validate.shape)
+    train, test = np.split(df.sample(frac=1), [int(.6 * len(df))])
 
     y_train = train['cardio']
     x_train = train.drop(['cardio'], axis=1)
     y_test = test['cardio']
     x_test = test.drop(['cardio'], axis=1)
 
-    classifier = MLPClassifier(solver="adam",hidden_layer_sizes=[100],learning_rate_init=0.01, alpha=0.001, tol=0.00000001, verbose=True, max_iter=1000)
+    classifier = MLPClassifier(solver="adam",hidden_layer_sizes=[100],learning_rate_init=0.01, tol=0.00000001, verbose=True, max_iter=1000)
+
     classifier.fit(x_train, y_train)
+    figure = px.line(classifier.loss_curve_)
+ #  figure.show()
 
     score = classifier.score(x_test, y_test)
-    print(score)
     plot_confusion_matrix(classifier, x_test, y_test)
     plt.show()
-   # fig = px.line(classifier.loss_curve_)
-    predictions = classifier.predict(x_test)
-   # cm = confusion_matrix(predictions, y_test)
-   # print(cm)
-   # fig.show()
+    print(score)
 
 def regression(df):
     df['bmi'] = df['weight']/pow(df['height']/100,2)
     df.drop(df[df.bmi > 80].index, inplace=True)
-    df = df.drop(["height", "weight", 'age','smoke','alco'], axis=1)
+    df = df.drop(["height", "weight", 'smoke', 'alco', 'ap_hi'], axis=1)
+
     train, test = np.split(df.sample(frac=1), [int(.6 * len(df))])
 
     y_train = train['bmi']
@@ -93,10 +93,10 @@ def regression(df):
 
     reg = LinearRegression()
     reg.fit(x_train, y_train)
-
     result = reg.predict(x_test)
-    mse = mean_squared_error(y_test,result)
-    score = reg.score(x_test,y_test)
+
+    mse = mean_squared_error(y_test, result)
+    score = reg.score(x_test, y_test)
 
     plt.figure(figsize=(10, 10))
     sns.regplot(y_test, result, fit_reg=True, scatter_kws={"s": 100})
@@ -113,17 +113,15 @@ def regression(df):
 
     print(df)
 
-def main():
-    df = pd.read_csv("data/srdcove_choroby.csv")
-    df = clearData(df)
-  #  correlation_matrix = df.corr()
-  #  plt.figure(figsize=(10, 10))
-  #  sns.heatmap(correlation_matrix, vmax=1, square=True, annot=True, cmap='cubehelix')
-
-   # binary_classification(df)
-    regression(df)
 
 if __name__ == "__main__":
-    main()
+    df = pd.read_csv("data/srdcove_choroby.csv")
+    df = clearData(df)
+    correlation_matrix = df.corr()
+    #plt.figure(figsize=(10, 10))
+    #sns.heatmap(correlation_matrix, vmax=1, square=True, annot=True, cmap='cubehelix')
+    #plt.show()
+    #binary_classification(df)
+    regression(df)
 
 
