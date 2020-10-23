@@ -92,7 +92,7 @@ def regression(df):
     x_test = test.drop(['bmi'], axis=1)
 
     reg = LinearRegression()
-    reg.fit(x_train, y_train)
+    reg.fit(x_train)
     result = reg.predict(x_test)
 
     mse = mean_squared_error(y_test, result)
