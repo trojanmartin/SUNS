@@ -16,25 +16,24 @@ def clear_data(df):
     df = df.drop(columns=['track.id','track.name','track.artist','track.popularity','track.album.id','track.album.name', 'track.album.release_date','playlist_name','playlist_id', 'playlist_subgenre'])
     df['playlist_genre'] = df['playlist_genre'].map({'edm': 0, 'latin': 1, 'pop': 2, 'r&b': 3, 'rap': 4, 'rock': 5})
 
+    return df
+
+def removeOutliers(df):
     df.drop(df[df.tempo > 220].index, inplace=True)
     df.drop(df[df.tempo < 50].index, inplace=True)
-
     df.drop(df[df.key < 0.3].index, inplace=True)
-
     df.drop(df[df.loudness < -30].index, inplace=True)
     df.drop(df[df.speechiness > 0.8].index, inplace=True)
+    df.drop(df[df.duration_ms > 1000000].index, inplace=True)
 
-    df.drop(df[df.duration_ms > 1].index, inplace=True)
+    return df
 
 
+def normalize(df):
     df['key']  = df['key'] / 11
-
     df['duration_ms'] = (df['duration_ms'] - df['duration_ms'].min()) / (df['duration_ms'].max() - df['duration_ms'].min())
     df['loudness'] = (df['loudness'] - df['loudness'].min()) / (df['loudness'].max() - df['loudness'].min())
     df['tempo'] = (df['tempo'] - df['tempo'].min())/(df['tempo'].max() - df['tempo'].min())
-
-
-
     return df
 
 def createGraphs(df):
@@ -87,11 +86,11 @@ def amn(train_df, test_df):
 
     model = kr.Sequential()
     model.add(kr.layers.Dense(100, input_dim=12, activation="sigmoid"))
-    model.add(kr.layers.Dense(50, kernel_regularizer=kr.regularizers.L2(0.01), activation="sigmoid"))
+    model.add(kr.layers.Dense(20, kernel_regularizer=kr.regularizers.L2(0.01), activation="sigmoid"))
     model.add(kr.layers.Dense(6, activation="sigmoid"))
 
     model.summary()
-    optimizer = kr.optimizers.Adam(learning_rate=0.001)
+    optimizer = kr.optimizers.Adam(learning_rate=0.01)
 
     model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=['accuracy'])
     early_stopping = kr.callbacks.EarlyStopping(monitor='val_loss', patience=50)
@@ -151,9 +150,17 @@ if __name__ == '__main__':
     test_df = pd.read_csv("data/test.csv")
     train_df = pd.read_csv("data/train.csv")
 
-    train_df = clear_data(train_df)
+    train_df = removeOutliers(train_df)
 
-#  createGraphs(train_df)
+    train_df = clear_data(train_df)
+    test_df = clear_data(test_df)
+
+    train_df = normalize(train_df)
+    test_df = normalize(test_df)
+
+
+
+    #createGraphs(train_df)
 
 #    svm(train_df,test_df)
 
