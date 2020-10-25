@@ -36,6 +36,27 @@ def normalize(df):
     df['tempo'] = (df['tempo'] - df['tempo'].min())/(df['tempo'].max() - df['tempo'].min())
     return df
 
+def svm(train_df, test_df):
+    train = train_df
+    train_y = train['playlist_genre']
+    train_x = train.drop(columns='playlist_genre')
+    test_y = test_df['playlist_genre']
+    test_x = test_df.drop(columns='playlist_genre')
+    from sklearn.model_selection import StratifiedShuffleSplit, GridSearchCV
+    C_range = np.logspace(-2, 10, 6)
+    param_grid = dict(C=C_range)
+    # from sklearn.linear_model import LogisticRegression
+    # lr = LogisticRegression()
+    # print(lr.get_params().keys())
+    # grid = GridSearchCV(SVC(verbose=1,), param_grid=param_grid, verbose=1)
+    # grid.fit(train_x, train_y.values.ravel())
+    # scores = grid.cv_results_['mean_test_score'].reshape(len(C_range))
+    # print("The best parameters are %s with a score of %0.2f" % (grid.best_params_, grid.best_score_))
+    svc = SVC(C=2.5118864315095797)
+    svc.fit(train_x, train_y.values.ravel())
+    score = svc.score(test_x, test_y)
+    print("Scores: ", score)
+
 def createGraphs(df):
     plt.plot(df['tempo'])
     plt.title('tempo')
@@ -87,14 +108,19 @@ def amn(train_df, test_df):
     model = kr.Sequential()
     model.add(kr.layers.Dense(100, input_dim=12, activation="sigmoid"))
     model.add(kr.layers.Dense(20, kernel_regularizer=kr.regularizers.L2(0.01), activation="sigmoid"))
+#   model.add(kr.layers.Dense(20, activation="sigmoid"))
+#    model.add(kr.layers.Dropout(0.4))
+#    model.add(kr.layers.Dense(20, activation="sigmoid"))
     model.add(kr.layers.Dense(6, activation="sigmoid"))
 
     model.summary()
-    optimizer = kr.optimizers.Adam(learning_rate=0.01)
+#    optimizer = kr.optimizers.SGD(0.01)
+    optimizer = kr.optimizers.Adam(0.01)
 
     model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=['accuracy'])
     early_stopping = kr.callbacks.EarlyStopping(monitor='val_loss', patience=50)
-    training = model.fit(train_x, train_y, epochs=1000, validation_data=(val_x, val_y), callbacks=[early_stopping])
+
+    training = model.fit(train_x, train_y, epochs=1000, validation_data=(val_x, val_y), batch_size=20, callbacks=[early_stopping])
 
     predicted = np.argmax(model.predict(test_x), axis=1)
 
