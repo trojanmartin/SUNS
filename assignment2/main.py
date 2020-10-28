@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import tensorflow as tf
 from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import StratifiedShuffleSplit, GridSearchCV
+from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 
 
@@ -22,7 +23,7 @@ def removeOutliers(df):
     df.drop(df[df.tempo > 220].index, inplace=True)
     df.drop(df[df.tempo < 50].index, inplace=True)
     df.drop(df[df.key < 0.3].index, inplace=True)
-    df.drop(df[df.loudness < -30].index, inplace=True)
+    df.drop(df[df.loudness < - 30].index, inplace=True)
     df.drop(df[df.speechiness > 0.8].index, inplace=True)
     df.drop(df[df.duration_ms > 1000000].index, inplace=True)
 
@@ -36,21 +37,21 @@ def normalize(df):
     df['tempo'] = (df['tempo'] - df['tempo'].min())/(df['tempo'].max() - df['tempo'].min())
     return df
 
+
 def svm(train_df, test_df):
     train = train_df
     train_y = train['playlist_genre']
     train_x = train.drop(columns='playlist_genre')
     test_y = test_df['playlist_genre']
     test_x = test_df.drop(columns='playlist_genre')
-    from sklearn.model_selection import StratifiedShuffleSplit, GridSearchCV
-    C_range = np.logspace(-2, 10, 6)
-    param_grid = dict(C=C_range)
-    # from sklearn.linear_model import LogisticRegression
+    # C_range = np.logspace(-2, 10, 6)
+    # param_grid = dict(C=C_range)
     # lr = LogisticRegression()
     # print(lr.get_params().keys())
     # grid = GridSearchCV(SVC(verbose=1,), param_grid=param_grid, verbose=1)
     # grid.fit(train_x, train_y.values.ravel())
     # scores = grid.cv_results_['mean_test_score'].reshape(len(C_range))
+    # print("Scores: ", scores)
     # print("The best parameters are %s with a score of %0.2f" % (grid.best_params_, grid.best_score_))
     svc = SVC(C=2.5118864315095797)
     svc.fit(train_x, train_y.values.ravel())
@@ -93,7 +94,7 @@ def createGraphs(df):
     plt.show()
 
 
-def amn(train_df, test_df):
+def neural_network(train_df, test_df):
     train, validate = np.split(train_df.sample(frac=1), [int(.8 * len(train_df))])
 
     train_y = pd.get_dummies(train['playlist_genre'])
@@ -109,8 +110,8 @@ def amn(train_df, test_df):
     model.add(kr.layers.Dense(100, input_dim=12, activation="sigmoid"))
     model.add(kr.layers.Dense(20, kernel_regularizer=kr.regularizers.L2(0.01), activation="sigmoid"))
 #   model.add(kr.layers.Dense(20, activation="sigmoid"))
-#    model.add(kr.layers.Dropout(0.4))
-#    model.add(kr.layers.Dense(20, activation="sigmoid"))
+#   model.add(kr.layers.Dropout(0.4))
+#   model.add(kr.layers.Dense(20, activation="sigmoid"))
     model.add(kr.layers.Dense(6, activation="sigmoid"))
 
     model.summary()
@@ -150,28 +151,6 @@ def amn(train_df, test_df):
     plt.legend(['train', 'test'], loc='upper left')
     plt.show()
 
-
-def svm(train_df, test_df):
-
-    train_y = train_df['playlist_genre']
-    train_x = train_df.drop(columns='playlist_genre')
-
-#    svclassifier = SVC(kernel='poly', degree=8,C=0.5, verbose=False)
-#    svclassifier.fit(train_x, train_y)
-    print("Done")
-
-    C_range = np.logspace(-2, 10, 5)
-    gamma_range = np.logspace(-9, 3, 5)
-    param_grid = dict(gamma=gamma_range,C=C_range)
-
-    cv = StratifiedShuffleSplit(n_splits=3,test_size=0.2,random_state=42)
-    grid = GridSearchCV(SVC(verbose=1), param_grid=param_grid,cv=cv,verbose=1)
-    grid.fit(train_x, train_y)
-
-    scores = grid.cv_results_['mean_test_score'].reshape(len(C_range), len(gamma_range))
-
-    print("The bes %s with score %0.2f" % (grid.best_params_, grid.best_score_))
-
 if __name__ == '__main__':
     test_df = pd.read_csv("data/test.csv")
     train_df = pd.read_csv("data/train.csv")
@@ -184,19 +163,12 @@ if __name__ == '__main__':
     train_df = normalize(train_df)
     test_df = normalize(test_df)
 
-
-
-    #createGraphs(train_df)
-
 #    svm(train_df,test_df)
+#    createGraphs(train_df)
+#    correlation_matrix = train_df.corr()
+#    plt.figure(figsize=(10, 10))
+#    sns.heatmap(correlation_matrix, vmax=1, square=True, annot=True, cmap='cubehelix')
+#    plt.show()
+#    svm(train_df,test_df)
+    neural_network(train_df, test_df)
 
-    amn(train_df,test_df)
-    correlation_matrix = train_df.corr()
-    plt.figure(figsize=(10, 10))
-    sns.heatmap(correlation_matrix, vmax=1, square=True, annot=True, cmap='cubehelix')
-    plt.show()
-#   createGraphs(train_df)
-
-
-
-    print("sad")
