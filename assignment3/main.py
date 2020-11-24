@@ -6,13 +6,16 @@ import seaborn as sns
 import tensorflow as tf
 from os import system
 import sklearn.tree as tree
+from sklearn.neural_network import MLPRegressor
 from imblearn.under_sampling import RandomUnderSampler
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.multioutput import MultiOutputRegressor
+from sklearn.metrics import mean_squared_error
 
 
 def clear_data(df):
     df = df.dropna(how="any", axis=0)
-    df = df.drop(columns=['objid','specobjid','run','rerun', 'mjd','fiberid'])
+    df = df.drop(columns=['objid', 'specobjid', 'run', 'rerun', 'mjd', 'fiberid'])
     df['class'] = df['class'].map({'STAR': 0, 'GALAXY': 1, 'QSO': 2})
     return df
 
@@ -81,7 +84,7 @@ def forest_classifier(train_df, test_df):
     sampler = RandomUnderSampler(random_state=42)
     train_x, train_y = sampler.fit_sample(train_x,train_y)
 
-    forest_classifier = RandomForestClassifier(max_depth=10,random_state=42,n_estimators=10)
+    forest_classifier = RandomForestClassifier(max_depth=15,random_state=42,n_estimators=10)
     forest_classifier.fit(train_x,train_y)
 
     one_tree = forest_classifier.estimators_[1]
@@ -103,18 +106,39 @@ def forest_classifier(train_df, test_df):
     plt.show()
 
 
-def neural_network_reggresion(train_df, test_df):
-    train, validate = np.split(train_df.sample(frac=1), [int(.8 * len(train_df))])
-
-    train_y = train[['x_coord', 'y_coord', 'z_coord']]
-    train_x = train.drop(columns=['x_coord', 'y_coord', 'z_coord'])
-    val_y = validate[['x_coord', 'y_coord', 'z_coord']]
-    val_x = validate.drop(columns=['x_coord', 'y_coord', 'z_coord'])
+def forest_regression(test_df,train_df):
+    train_y = train_df[['x_coord', 'y_coord', 'z_coord']]
+    train_x = train_df.drop(columns=['x_coord', 'y_coord', 'z_coord'])
     test_y = test_df[['x_coord', 'y_coord', 'z_coord']]
     test_x = test_df.drop(columns=['x_coord', 'y_coord', 'z_coord'])
-#    model = KNeighborsRegressor()
-#    model.fit(train_x, train_y)
-#    print(model.score(test_x, test_y))
+    multiOutput = MultiOutputRegressor(RandomForestRegressor(n_estimators=30,
+                                                              max_depth=30))
+    multiOutput.fit(train_x, train_y)
+
+    score = multiOutput.score(test_x,test_y)
+
+    predicted = multiOutput.predict(test_x)
+    mse = mean_squared_error(test_y, predicted)
+
+def neural_network_reggresion(train_df, test_df):
+
+    train_y = train_df[['x_coord', 'y_coord', 'z_coord']]
+    train_x = train_df.drop(columns=['x_coord', 'y_coord', 'z_coord'])
+
+    test_y = test_df[['x_coord', 'y_coord', 'z_coord']]
+    test_x = test_df.drop(columns=['x_coord', 'y_coord', 'z_coord'])
+
+    regr = MLPRegressor(random_state=1,hidden_layer_sizes=[100,],learning_rate_init=0.01, max_iter=500)
+
+    multioutput = MultiOutputRegressor(regr)
+
+    multioutput.fit(train_x, train_y)
+
+    score = multioutput.score(test_x,test_y)
+
+    predicted = multioutput.predict(test_x)
+    mse = mean_squared_error(test_y, predicted)
+
 
 if __name__ == '__main__':
     test_df = pd.read_csv("data/test.csv")
@@ -122,14 +146,14 @@ if __name__ == '__main__':
 
     train_df = clear_data(train_df)
     test_df = clear_data(test_df)
-#    neural_network_reggresion(train_df,test_df)
+#    forest_regression(test_df,train_df)
+    neural_network_reggresion(train_df,test_df)
 #    correlation_matrix = train_df.corr()
 #    plt.figure(figsize=(10, 10))
 #    sns.heatmap(correlation_matrix, vmax=1, square=True, annot=True, cmap='cubehelix')
 #    plt.show()
 #    forest_classifier(train_df,test_df)
-
-    neural_network_classification(train_df, test_df)
+#    neural_network_classification(train_df, test_df)
 
 
 
