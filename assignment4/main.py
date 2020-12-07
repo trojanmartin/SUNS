@@ -54,7 +54,7 @@ def eda(data):
 
     fig = px.scatter(data, x="price", y=data["positive_ratings"] - data["negative_ratings"])
     fig.update_traces(marker=dict(size=3))
-#    fig.show()
+    fig.show()
 
     fig = px.scatter(data, x="release_date", y=data["positive_ratings"])
     fig.update_traces(marker=dict(size=3))
@@ -90,8 +90,6 @@ def clearData(data):
 
     data["owners"] = data["owners"].map(lambda x: get_owner_value(x))
 
-   # nejakestring = ["action","strategy",  ]
-
 
     return data
 
@@ -109,8 +107,6 @@ def get_category(x):
         return 3
     else:
         return 4
-
-
 
 
 
@@ -153,8 +149,10 @@ def clustering(data):
     clusters = cluster.MiniBatchKMeans(n_clusters=nClusters, verbose=True).fit(normalized_data)
 #    clusters = cluster.DBSCAN(eps=7,min_samples=25).fit(normalized_data)
     data["cluster_id"] = clusters.labels_
-    create_graphs(data)
+#    create_graphs(data)
 
+    toGraph = prepare_pca(2,normalized_data,clusters.labels_)
+    plot_2d(toGraph,clusters.labels_)
 
 #    toGraph = prepare_tsne(3,normalized_data,clusters.labels_)
 #    plot_3d(toGraph,clusters.labels_)
@@ -168,6 +166,17 @@ def prepare_tsne(n_components, data, kmeans_labels):
     df_matrix['labels'] = kmeans_labels
 
     return df_matrix
+
+
+def plot_2d(df, name='labels'):
+    fig = px.scatter(df, x='x', y='y',
+                        color=name, opacity=0.5)
+
+    fig.update_traces(marker=dict(size=3))
+    fig.show()
+
+    print("sad")
+
 
 def plot_3d(df, name='labels'):
     fig = px.scatter_3d(df, x='x', y='y', z='z',
